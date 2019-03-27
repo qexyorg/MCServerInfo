@@ -1,0 +1,25 @@
+{
+    "name": "qexyorg/mcserverinfo",
+    "description": "MCServerInfo this is a library for get statistics from minecraft server",
+    "type": "library",
+    "keywords": ["minecraft", "server", "stats", "query", "info"],
+    "homepage": "https://qexy.org",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Qexy",
+            "email": "admin@qexy.org",
+            "homepage": "https://qexy.org"
+        }
+    ],
+
+    "minimum-stability": "dev-master",
+    "require": {
+        "php": "^5.6"
+    },
+    "autoload": {
+        "psr-4": {
+            "qexyorg\\": ""
+        }
+    }
+}
