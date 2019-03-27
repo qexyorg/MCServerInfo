@@ -1,0 +1,2 @@
+# MCServerInfo
+Minecraft server stats
