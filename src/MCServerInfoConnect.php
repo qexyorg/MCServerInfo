@@ -9,7 +9,7 @@
  *
  * @license MIT
  *
- * @version 1.0.0
+ * @version 1.1.0
  */
 
 namespace qexyorg\MCServerInfo;
@@ -27,7 +27,6 @@ class MCServerInfoConnect {
 	const ERROR_SERVER_PARSE = 10;
 	const ERROR_READ_DATA = 11;
 
-	private $old = false;
 	private $ip = '127.0.0.1';
 	private $port = 25565;
 	private $address = '127.0.0.1';
@@ -36,6 +35,7 @@ class MCServerInfoConnect {
 	private $socket = null;
 	private $timeout = 3;
 	private $logic = ''; // query | ping | ping_old
+	private $defaultLogic = 'ping'; // query | ping | ping_old
 
 	private $version = '';
 	private $protocol = '';
@@ -49,20 +49,12 @@ class MCServerInfoConnect {
 	private $mods = [];
 	private $plugins = [];
 
-	public function __construct($ip, $port=25565, $old=false, $timeout=3){
+	public function __construct($ip, $port=25565, $logic='', $timeout=3){
 		$this->setIP($ip)
 			->setAddress($ip)
 			->setPort($port)
-			->setOld($old);
-	}
-
-	/**
-	 * Is old version getter
-	 *
-	 * @return boolean
-	 */
-	public function getOld(){
-		return $this->old;
+			->setLogic($logic)
+			->setTimeout($timeout);
 	}
 
 	/**
@@ -112,18 +104,6 @@ class MCServerInfoConnect {
 	 */
 	public function getAddress(){
 		return $this->address;
-	}
-
-	/**
-	 * Is old setter
-	 *
-	 * @param $value boolean
-	 *
-	 * @return $this
-	 */
-	public function setOld($value){
-		$this->old = ($value===true);
-		return $this;
 	}
 
 	/**
@@ -381,6 +361,60 @@ class MCServerInfoConnect {
 		return $this->slots;
 	}
 
+	private function getColors(){
+		return [
+			'black' => ['code' => '§0', 'hex' => '000000'],
+			'dark_blue' => ['code' => '§1', 'hex' => '0000AA'],
+			'dark_green' => ['code' => '§2', 'hex' => '00AA00'],
+			'dark_aqua' => ['code' => '§3', 'hex' => '00AAAA'],
+			'dark_red' => ['code' => '§4', 'hex' => 'AA0000'],
+			'dark_purple' => ['code' => '§5', 'hex' => 'AA00AA'],
+			'gold' => ['code' => '§6', 'hex' => 'FFAA00'],
+			'gray' => ['code' => '§7', 'hex' => 'AAAAAA'],
+			'dark_gray' => ['code' => '§8', 'hex' => '555555'],
+			'blue' => ['code' => '§9', 'hex' => '5555FF'],
+			'green' => ['code' => '§a', 'hex' => '55FF55'],
+			'aqua' => ['code' => '§b', 'hex' => '55FFFF'],
+			'red' => ['code' => '§c', 'hex' => 'FF5555'],
+			'light_purple' => ['code' => '§d', 'hex' => 'FF55FF'],
+			'yellow' => ['code' => '§e', 'hex' => 'FFFF55'],
+			'white' => ['code' => '§f', 'hex' => 'FFFFFF'],
+		];
+	}
+
+	private function formatArrayName($name){
+		$string = '';
+
+		$colors = $this->getColors();
+
+		if(is_array($name)){
+			foreach($name as $k => $v){
+				if(is_array($v)){
+					if($k=='clickEvent' || $k=='hoverEvent' || $k=='score'){ continue; }
+					$string .= $this->formatArrayName($v);
+				}else{
+					if(is_bool($v) && $v){
+						switch($k){
+							case 'obfuscated': $string .= '§k'; break;
+							case 'bold': $string .= '§l'; break;
+							case 'strikethrough':
+							case 'strike': $string .= '§m'; break;
+							case 'underline': $string .= '§n'; break;
+							case 'italic': $string .= '§o'; break;
+							case 'reset': $string .= '§r'; break;
+						}
+					}elseif(is_string($v)){
+						$string .= ($k=='color' && isset($colors[$v])) ? $colors[$v]['code'] : $v;
+					}
+				}
+			}
+		}else{
+			$string = $name;
+		}
+
+		return $string;
+	}
+
 	/**
 	 * Server name setter
 	 *
@@ -389,7 +423,7 @@ class MCServerInfoConnect {
 	 * @return $this
 	 */
 	public function setServerName($name){
-		$this->servername = $name;
+		$this->servername = $this->formatArrayName($name);
 
 		return $this;
 	}
@@ -544,6 +578,7 @@ class MCServerInfoConnect {
 		$socket = @fsockopen("{$protocol}://".$this->getAddress(), $this->getPort(), $errno, $error, $this->getTimeout());
 
 		if($errno || $socket===false){
+			$error = iconv('Windows-1251', "UTF-8//TRANSLIT", $error);
 			$this->setError("{$error} #{$errno}", self::ERROR_SOCKET);
 
 			return false;
@@ -585,7 +620,7 @@ class MCServerInfoConnect {
 		return substr($data, 5);
 	}
 
-	public function startQueryLogic(){
+	public function runQuery(){
 
 		$data = $this->write(0x09);
 
@@ -709,7 +744,7 @@ class MCServerInfoConnect {
 		return true;
 	}
 
-	private function runPing(){
+	public function runPing(){
 		$start = microtime(true);
 
 		$data = "\x00\x04";
@@ -784,6 +819,8 @@ class MCServerInfoConnect {
 			->setProtocol(@$data['version']['protocol'])
 			->setOnline(@$data['players']['online'])
 			->setSlots(@$data['players']['max'])
+			->setServerName(@$data['description'])
+			->setFavicon(@$data['favicon'])
 			->setStatus(true);
 
 		$this->setLogic('ping');
@@ -792,7 +829,7 @@ class MCServerInfoConnect {
 	}
 
 	public function searchLogic(){
-		if(!$this->query() || !$this->startQueryLogic()){
+		if(!$this->query() || !$this->runQuery()){
 			if(!$this->ping() || !$this->startPingLogic()){
 				return false;
 			}
@@ -834,7 +871,7 @@ class MCServerInfoConnect {
 
 	public function getResponse(){
 		return [
-			'status' => $this->getStatus(),
+			'status' => ($this->getStatus()) ? 1 : 0,
 			'error' => $this->getError(),
 			'errno' => $this->getErrno(),
 			'address' => $this->getAddress(),
@@ -847,12 +884,61 @@ class MCServerInfoConnect {
 			'players' => $this->getPlayers(),
 			'servername' => $this->getServerName(),
 			'favicon' => $this->getFavicon(),
-			'mods' => $this->getMods()
+			'mods' => $this->getMods(),
+			'logic' => $this->getLogic()
 		];
 	}
 
+	/**
+	 * Default search logic setter
+	 *
+	 * @param $logic string
+	 *
+	 * @return $this
+	*/
+	public function setDefaultSearchLogic($logic){
+		$this->defaultLogic = $logic;
+
+		return $this;
+	}
+
+	private function executeResult(){
+
+		$logic = $this->getLogic();
+
+		if($logic=='query'){
+			return ($this->query() &&$this->runQuery());
+		}elseif($logic=='ping'){
+			return ($this->ping() && $this->runPing());
+		}elseif($logic=='ping_old'){
+			return ($this->ping() && $this->runPingOld());
+		}
+
+		if(empty($this->defaultLogic)){
+			return $this->searchLogic();
+		}
+
+		if($this->defaultLogic=='ping'){
+			if($this->ping() && ($this->runPing() || $this->runPingOld())){ return true; }
+
+			return ($this->query() && $this->runQuery());
+		}elseif($this->defaultLogic=='ping_old'){
+			if($this->ping() && ($this->runPingOld() || $this->runPing())){ return true; }
+
+			return ($this->query() && $this->runQuery());
+		}
+
+		if($this->query() && $this->runQuery()){ return true; }
+
+		return ($this->ping() && ($this->runPing() || $this->runPingOld()));
+	}
+
 	public function execute(){
-		return $this->searchLogic();
+		$result = $this->executeResult();
+
+		$this->disconnect();
+
+		return $result;
 	}
 }
 
