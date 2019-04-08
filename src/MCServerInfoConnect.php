@@ -9,7 +9,7 @@
  *
  * @license MIT
  *
- * @version 1.1.0
+ * @version 1.2.0
  */
 
 namespace qexyorg\MCServerInfo;
@@ -38,6 +38,7 @@ class MCServerInfoConnect {
 	private $defaultLogic = 'ping'; // query | ping | ping_old
 
 	private $version = '';
+	private $versions = [];
 	private $protocol = '';
 
 	private $status = false;
@@ -281,7 +282,10 @@ class MCServerInfoConnect {
 	 * @return $this
 	 */
 	public function setVersion($version){
-		$this->version = $version;
+
+		$this->versions = $this->searchVersions($version);
+
+		$this->version = $this->versions[sizeof($this->versions)-1];
 
 		return $this;
 	}
@@ -293,6 +297,29 @@ class MCServerInfoConnect {
 	 */
 	public function getVersion(){
 		return $this->version;
+	}
+
+	/**
+	 * Versions setter
+	 *
+	 * @param $versions array
+	 *
+	 * @return $this
+	 */
+	public function setVersions($versions){
+
+		$this->versions = $versions;
+
+		return $this;
+	}
+
+	/**
+	 * Versions getter
+	 *
+	 * @return array
+	 */
+	public function getVersions(){
+		return $this->versions;
 	}
 
 	/**
@@ -413,6 +440,25 @@ class MCServerInfoConnect {
 		}
 
 		return $string;
+	}
+
+	/**
+	 * Производит поиск версий в строке
+	 * Возвращает массив версий в порядке возрастания
+	 *
+	 * @param $string string
+	 *
+	 * @return array
+	*/
+	private function searchVersions($string){
+
+		if(!preg_match_all('/(\d\.\d{1,}(\.\d+)?)/i', $string, $matches, PREG_PATTERN_ORDER)){
+			return [];
+		}
+
+		sort($matches[0]);
+
+		return $matches[0];
 	}
 
 	/**
