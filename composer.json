@@ -20,7 +20,7 @@
     },
     "autoload": {
         "psr-4": {
-            "qexyorg\\MCServerInfo\\": "vendor/qexyorg/mcserverinfo/src/"
+            "MCServerInfo\\": "src/"
         }
     }
 }
