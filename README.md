@@ -45,3 +45,5 @@ var_dump($connect->getResponse()->rawData());
 ```
 
 More examples you can find in "examples" folder
+
+Documentation: https://app.gitbook.com/@qexy/s/mcserverinfo/
