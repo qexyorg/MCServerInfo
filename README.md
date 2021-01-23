@@ -1,6 +1,8 @@
 # MCServerInfo
 Minecraft server stats
 
+![Example](https://i.imgur.com/bX7e4L6.png)
+
 ### Install
 `composer require qexyorg/mcserverinfo`
 
