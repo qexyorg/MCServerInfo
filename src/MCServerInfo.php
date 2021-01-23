@@ -1,65 +1,104 @@
 <?php
 
 /**
+ *
  * Main class of MCServerInfo
+ *
  *
  * @author Qexy admin@qexy.org
  *
+ *
  * @package qexyorg\MCServerInfo
+ *
  *
  * @license MIT
  *
- * @version 1.2.0
-*/
+ *
+ * @version 2.0.0
+ *
+ */
 
 namespace qexyorg\MCServerInfo;
 
+use qexyorg\MCServerInfo\Methods\Query;
+use qexyorg\MCServerInfo\Methods\Ping;
+use qexyorg\MCServerInfo\Methods\PingOld;
+
 class MCServerInfo {
 
-	private $storage = [];
-
-	private function getConnect($params){
-		$token = md5(var_export($params, true));
-
-		return (isset($this->storage[$token])) ? $this->storage[$token] : null;
-	}
-
-	private function setConnect($params, $connect){
-		$token = md5(var_export($params, true));
-
-		$this->storage[$token] = $connect;
-
-		return $this->storage[$token];
-	}
 
 	/**
-	 * Connect to server
-	 *
-	 * @param $ip string
-	 * @param $port integer
-	 * @param $logic string
-	 * @param $timeout integer
-	 *
-	 * @return MCServerInfoConnect
+	 * Automatic search logic
+	 * WARNING!!! Can be slow
+	 * Queue steps: Query, Ping, PingOld
 	*/
-	public function connect($ip='127.0.0.1', $port=25565, $logic='', $timeout=3){
-		$ip = strtolower($ip);
+	const METHOD_AUTO = -1;
 
-		$logic = strtolower($logic);
 
-		$connect = $this->getConnect([$ip, $port, $logic]);
+	const METHOD_PING = 0;
 
-		if(!is_null($connect) && !$connect->getErrno()){
-			return $connect;
-		}
 
-		$connect = new MCServerInfoConnect($ip, $port, $logic, $timeout);
+	const METHOD_QUERY = 1;
 
-		return $this->setConnect([$ip, $port, $logic], $connect);
+
+	const METHOD_OLD_PING = 2;
+
+
+	/**
+	 *
+	 * Make new instance of MCServerInfoConnect
+	 *
+	 *
+	 * @param $address string
+	 *
+	 *
+	 * @param $port int
+	 *
+	 *
+	 * @param $timeout int
+	 *
+	 *
+	 * @return Connect
+	 *
+	*/
+	public static function Connect(string $address = '127.0.0.1', int $port = 25565, int $timeout = 3) : Connect {
+		return new Connect($address, $port, $timeout);
 	}
 
-	public function removeFormatting($string){
-		return preg_replace('/\§([0-9a-f]|k|l|m|n|o|r)/i', '', $string);
+
+	/**
+	 * Method for make new instance of Query
+	 *
+	 * @param $connect Connect
+	 *
+	 * @return Query
+	*/
+	public static function Query(Connect $connect) : Query {
+		return new Query($connect);
+	}
+
+
+	/**
+	 * Method for make new instance of Ping
+	 *
+	 * @param $connect Connect
+	 *
+	 * @return Ping
+	 */
+	public static function Ping(Connect $connect) : Ping {
+		return new Ping($connect);
+	}
+
+
+	/**
+	 * Method for make new instance of PingOld
+	 *
+	 * @param $connect Connect
+	 *
+	 * @return PingOld
+	 */
+	public static function PingOld(Connect $connect) : PingOld {
+		return new PingOld($connect);
 	}
 }
 
