@@ -12,22 +12,20 @@ use qexyorg\MCServerInfo\MCServerInfo;
 
 require_once('vendor/autoload.php');
 
-$query = new MCServerInfo();
+$connect = MCServerInfo::Connect('mc.my-super-server.net', 25565);
 
-$req = $query->connect('mc.server.com', 25565);
-
-if(!$req->execute()){
-	exit('Error: '.$req->getError().' | Errno: '.$req->getErrno());
+if(!$connect->request()){
+	exit($connect->getError());
 }
 
-var_dump($req->getResponse());
+var_dump($connect->getResponse()->rawData());
 ```
-In this example, the logic will be found automatically
+In this example, method will be found automatically (**Can be slow!!!**).
 
 
-If you know what is a logic used you can set it manually
-Available logics: `query`; `ping`(Default); `ping_old`
-### Example with manually logic
+If you know what is a method used you can set it manually
+
+### Example with manually method
 ```php
 <?php
 
@@ -35,15 +33,13 @@ use qexyorg\MCServerInfo\MCServerInfo;
 
 require_once('vendor/autoload.php');
 
-$query = new MCServerInfo();
+$connect = MCServerInfo::Connect('mc.my-super-server.net', 25565)->setMethod(MCServerInfo::METHOD_PING);
 
-$req = $query->connect('mc.server.com', 25565)->setLogic('ping');
-
-if(!$req->execute()){
-	exit('Error: '.$req->getError().' | Errno: '.$req->getErrno());
+if(!$connect->request()){
+	exit($connect->getError());
 }
 
-var_dump($req->getResponse());
+var_dump($connect->getResponse()->rawData());
 ```
 
-You can change default search logic via `$req->setDefaultSearchLogic('query')` before call `$req->execute()`
+More examples you can find in "examples" folder
