@@ -206,9 +206,9 @@ class Connect {
 	 * @see Ping
 	 * @see PingOld
 	 *
-	 * @return Query | Ping | PingOld
+	 * @return Query | Ping | PingOld | null
 	*/
-	public function getResponse() : object {
+	public function getResponse() : ?object {
 		return $this->response;
 	}
 
